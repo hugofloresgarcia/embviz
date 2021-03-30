@@ -1,8 +1,10 @@
 from typing import List
 from pathlib import Path
-from collections import OrderedDict
 import warnings
+import logging
 import shelve
+
+from natsort import natsorted
 
 import numpy as np
 import pandas as pd
@@ -36,8 +38,16 @@ class EmbeddingSpaceLogger:
 
     def keys(self):
         with shelve.open(str(self.shelf_path), writeback=False) as shelf:
-            keys = list(shelf.keys())
+            keys = natsorted(list(shelf.keys()))
         return keys
+
+    def set_method(self, method: str):
+        self.reducer = load_reducer(method, self.n_components)
+        self.method = method
+    
+    def set_n_components(self, n_components: int):
+        self.reducer = load_reducer(self.method, n_components)
+        self.n_components = n_components
 
     def get_step(self, step_key: str):
         with shelve.open(str(self.shelf_path), writeback=False) as shelf:
@@ -46,7 +56,7 @@ class EmbeddingSpaceLogger:
             else:
                 raise ValueError(f'{step_key}')
 
-    def add_step(self, step_key: int, embeddings: List[np.ndarray], labels: List[str],
+    def add_step(self, step_key: str, embeddings: List[np.ndarray], labels: List[str],
                  symbols: List[str] = None, metadata: List[dict] = None,
                  **plotly_kwargs):
         with shelve.open(str(self.shelf_path), writeback=True) as shelf:
@@ -60,7 +70,8 @@ class EmbeddingSpaceLogger:
                 'labels': labels,
                 'symbols': symbols,
                 'metadata': metadata,
-                'plotly_kwargs': plotly_kwargs
+                'plotly_kwargs': plotly_kwargs,
+                'projs': {'2d':{},  '3d': {}},
             }
 
             shelf.sync()
@@ -79,48 +90,41 @@ class EmbeddingSpaceLogger:
         symbols = step['symbols']
         labels = step['labels']
         metadata = step['metadata']
-        # breakpoint()
 
-        if self.n_components == 2:
-            if '2d_proj' in step:
-                projection = step['2d_proj']
-            else:
-                projection = self.reducer.fit_transform(step['embedding'])
-                step['2d_proj'] = projection
-            
-            df = pd.DataFrame(dict(
-                x=projection[:, 0],
-                y=projection[:, 1],
-                label=labels, 
-                audio_path=metadata['audio_path']
-            ))
-            fig = px.scatter(df, x='x', y='y', color='label',
-                             symbol=symbols,
-                             custom_data=['audio_path', 'label'],
-                             **step['plotly_kwargs'])
+        if self.method in step['projs'][f'{self.n_components}d']:
+            projection = step['projs'][f'{self.n_components}d'][self.method]
+        else:
+            print(f'doing {self.method} {self.n_components} dim reduction for {key}')
+            projection = self.reducer.fit_transform(step['embedding'])
 
-        elif self.n_components == 3:
-            if '3d_proj' in step:
-                projection = step['3d_proj']
-            else:
-                projection = self.reducer.fit_transform(step['embedding'])
-                step['3d_proj'] = projection
+            print(f'caching...')
+            step['projs'][f'{self.n_components}d'][self.method] = projection
+            self.update_step(key, step)
 
-            df = pd.DataFrame(dict(
-                x=projection[:, 0],
-                y=projection[:, 1],
-                z=projection[:, 2],
-                label=labels, 
-                audio_path=metadata['audio_path']
-            ))
-            fig = px.scatter_3d(df, x='x', y='y', z='z',
-                                color='label', symbol=symbols, 
-                                custom_data=['audio_path', 'label'],
-                                **step['plotly_kwargs'])
+            print(f'dim reduction done')
+
+        scatter_fn = px.scatter if self.n_components == 2 else px.scatter_3d
+        axes = ('x', 'y', 'z')
+        proj = {}
+        scatter_kwargs = {}
+        for idx in range(projection.shape[-1]):
+            proj[axes[idx]] = projection[:, idx]
+            scatter_kwargs[axes[idx]] = axes[idx]
+        
+        df = pd.DataFrame(dict(
+            label=labels, 
+            audio_path=metadata['audio_path'],
+            **proj,
+        ))
+        fig = scatter_fn(df, color='label',
+                         symbol=symbols,
+                         custom_data=['audio_path', 'label'], 
+                         color_discrete_sequence=px.colors.qualitative.Light24,
+                         **scatter_kwargs,
+                         **step['plotly_kwargs'])
 
         fig.update_traces(marker=dict(size=12,
-                                      line=dict(width=1,
+                                      line=dict(width=2,
                                                 color='DarkSlateGrey')),
                           selector=dict(mode='markers'))
-        # fig.update_traces(customdata=metadata['audio_path'])
         return fig
