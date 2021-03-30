@@ -11,7 +11,7 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import plotly.io as pio
 
-from embedding_viz.logger import EmbeddingSpaceLogger
+from embviz.logger import EmbeddingSpaceLogger
 
 def read_figures_from_path(directory: str):
     paths = glob.glob(str(Path(args.path) / '*.json'))

@@ -7,15 +7,15 @@ with open('README.md') as file:
 
 # TODO - replace with details of your project
 setup(
-    name='embedding_viz',
+    name='embviz',
     description='',
     version='0.0.1',
     author='Hugo Flores Garcia',
     author_email='hf01049@georgiasouthern.edu',
-    url='https://github.com/hugofloresgarcia/embedding-viz',
+    url='https://github.com/hugofloresgarcia/embviz',
     install_requires=['plotly', 'pandas'],
-    packages=['embedding_viz'],
-    package_data={'embedding_viz': ['assets/*']},
+    packages=['embviz'],
+    package_data={'embviz': ['assets/*']},
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords=[],

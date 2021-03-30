@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
-import embedding_viz.utils as utils
+import embviz.utils as utils
 
 def load_reducer(method: str, n_components: int):
     if method == 'umap':
