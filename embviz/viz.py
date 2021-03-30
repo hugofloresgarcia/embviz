@@ -10,6 +10,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import plotly.io as pio
+from yaml.error import Mark
 
 from embviz.logger import EmbeddingSpaceLogger
 
@@ -47,10 +48,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--path', type=str)
 args = parser.parse_args()
 
-N_COMPONENTS = 2
-METHOD = 'tsne'
+N_COMPONENTS = 3
+DEFAULTMETHOD = 'pca'
 
-logger = EmbeddingSpaceLogger(args.path, N_COMPONENTS, METHOD)
+logger = EmbeddingSpaceLogger(args.path, N_COMPONENTS, DEFAULTMETHOD)
 
 if len(logger.keys()) == 0:
     raise ValueError(f'no embeddings found in {args.path}')
@@ -89,12 +90,42 @@ app.layout = html.Div([
             """),
             html.Pre(id='click-data', style=styles['pre']),
             # html.Div(id="placeholder", style={"display": "none"}),
-            html.Audio(id="player", src=None, controls=True,),
+            html.Audio(id="player", src=None, controls=True,autoPlay=True),
             #    style={"width": "100%"},),
+
+            html.Div([
+                html.Div([
+                    dcc.Markdown("""
+                    **dim reduction method**
+                    """),
+                    dcc.RadioItems(
+                        id='method-options',
+                        options=[
+                            {'label': 'tsne', 'value': 'tsne'},
+                            {'label': 'umap', 'value': 'umap'},
+                            {'label': 'pca', 'value': 'pca'}
+                        ],
+                        value=DEFAULTMETHOD
+                    )
+                ], className='six columns'),
+                html.Div([
+                    dcc.Markdown("""
+                    **number of components**
+                    """),
+                    dcc.RadioItems(
+                        id='n_components-options',
+                        options=[
+                            {'label': '2', 'value': 2},
+                            {'label': '3', 'value': 3},
+                        ],
+                        value=2
+                    )
+                ], className='six columns'),
+
+            ], className='row')
         ], className='six columns'),
     ], className='row'),
 ])
-
 
 @app.callback(
     Output('click-data', 'children'),
@@ -108,9 +139,20 @@ def display_click_data(metadata):
 
 @app.callback(
     Output('graph-with-slider', 'figure'),
-    Input('step-slider', 'value'))
-def update_figure(key):
-    fig = logger.plot_step(key)
+    Input('step-slider', 'value'),
+    Input('method-options', 'value'),
+    Input('n_components-options', 'value'))
+def update_figure(key, method, n_components):
+    print('updating figure...')
+
+    logger.set_method(method)
+
+    logger.set_n_components(n_components)
+
+    key = logger.keys()[key]
+    fig = logger.plot_step(str(key))
+    print(fig)
+
     return fig
 
 @app.callback(
