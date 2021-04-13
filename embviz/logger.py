@@ -18,7 +18,7 @@ def load_reducer(method: str, n_components: int):
         reducer = umap.UMAP(n_components=n_components)
     elif method == 'tsne':
         from sklearn.manifold import TSNE
-        reducer = TSNE(n_components=n_components)
+        reducer = TSNE(n_components=n_components, n_iter=500, verbose=1, n_jobs=5)
     elif method == 'pca':
         from sklearn.decomposition import PCA
         reducer = PCA(n_components=n_components)
