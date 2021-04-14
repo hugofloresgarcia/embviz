@@ -21,7 +21,7 @@ def load_reducer(method: str, n_components: int):
     elif method == 'tsne':
         from sklearn.manifold import TSNE
         reducer = TSNE(n_components=n_components,
-                       n_iter=500, verbose=1, n_jobs=5)
+                       n_iter=500, verbose=1, n_jobs=5, random_state=0)
     elif method == 'pca':
         from sklearn.decomposition import PCA
         reducer = PCA(n_components=n_components)
