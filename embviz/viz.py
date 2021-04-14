@@ -14,6 +14,7 @@ from yaml.error import Mark
 
 from embviz.logger import EmbeddingSpaceLogger
 
+
 def read_figures_from_path(directory: str):
     paths = glob.glob(str(Path(args.path) / '*.json'))
     figures = {}
@@ -34,6 +35,7 @@ def read_figures_from_path(directory: str):
 
     return figures
 
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -45,25 +47,33 @@ styles = {
 }
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--path', type=str)
+parser.add_argument('--dir', type=str)
 args = parser.parse_args()
 
-N_COMPONENTS = 3
+N_COMPONENTS = 2
 DEFAULTMETHOD = 'pca'
 
-logger = EmbeddingSpaceLogger(args.path, N_COMPONENTS, DEFAULTMETHOD)
+all_emb_roots = list(set([str(Path(path).parent) for path in
+                          glob.glob(str(Path(args.dir) / '**/*.emb'), recursive=True)]))
+
+loggers = {}
+for r in all_emb_roots:
+    logger = EmbeddingSpaceLogger(r, N_COMPONENTS, DEFAULTMETHOD)
+    loggers[Path(r).name] = logger
+
+logger_key, logger = next(iter(loggers.items()))
 
 if len(logger.keys()) == 0:
-    raise ValueError(f'no embeddings found in {args.path}')
+    raise ValueError(f'no embeddings found in {args.dir}')
 
 app.layout = html.Div([
 
     dcc.Markdown(f"""
         # embedding space visualizer
 
-        showing embeddings for {str(args.path)}
+        showing embeddings for {str(args.dir)}
     """),
-        
+
     html.Div([
         html.Div([
             dcc.Graph(figure=logger.plot_step(list(logger.keys())[0]),
@@ -80,7 +90,7 @@ app.layout = html.Div([
                 ),
             ]),
         ], className='six columns'),
-        
+
         html.Div([
             dcc.Markdown("""
                 **Click Data**
@@ -90,10 +100,11 @@ app.layout = html.Div([
             """),
             html.Pre(id='click-data', style=styles['pre']),
             # html.Div(id="placeholder", style={"display": "none"}),
-            html.Audio(id="player", src=None, controls=True,autoPlay=True),
+            html.Audio(id="player", src=None, controls=True, autoPlay=True),
             #    style={"width": "100%"},),
 
             html.Div([
+
                 html.Div([
                     dcc.Markdown("""
                     **dim reduction method**
@@ -121,13 +132,27 @@ app.layout = html.Div([
                         value=2
                     )
                 ], className='six columns'),
+                dcc.Markdown("""
+                    **embedding space tag**
+                    """),
+                dcc.Dropdown(
+                    id='logger-options',
+                    options=[
+                        # {'label': '2', 'value': 2},
+                        # {'label': '3', 'value': 3},
+                        {'label': key, 'value': key} \
+                        for key, value in loggers.items()
+                    ],
+                    value=logger_key,
+                )
 
             ], className='row')
         ], className='six columns'),
     ], className='row'),
 ])
 
-@app.callback(
+
+@ app.callback(
     Output('click-data', 'children'),
     Input('graph-with-slider', 'clickData'))
 def display_click_data(metadata):
@@ -137,13 +162,17 @@ def display_click_data(metadata):
     except:
         return None
 
-@app.callback(
+
+@ app.callback(
     Output('graph-with-slider', 'figure'),
     Input('step-slider', 'value'),
     Input('method-options', 'value'),
-    Input('n_components-options', 'value'))
-def update_figure(key, method, n_components):
+    Input('n_components-options', 'value'),
+    Input('logger-options', 'value'))
+def update_figure(key, method, n_components, wkey):
     print('updating figure...')
+    logger_key = wkey
+    logger = loggers[logger_key]
 
     logger.set_method(method)
 
@@ -155,7 +184,8 @@ def update_figure(key, method, n_components):
 
     return fig
 
-@app.callback(
+
+@ app.callback(
     Output('player', 'src'),
     Input('graph-with-slider', 'clickData'))
 def attempt_load_audio(metadata: dict):
@@ -163,9 +193,10 @@ def attempt_load_audio(metadata: dict):
         print(metadata['points'])
         src = metadata['points'][0]['customdata'][0]
         src = Path(src).relative_to('/home/hugo/lab/music-trees/data/')
-        src = 'http://0.0.0.0:8000/'+ str(src)
+        src = 'http://0.0.0.0:8000/' + str(src)
         return src
     except:
         return None
+
 
 app.run_server(debug=True)
