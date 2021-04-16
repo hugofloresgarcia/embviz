@@ -88,6 +88,7 @@ app.layout = html.Div([
                     marks={i: str(k) for i, k in enumerate(logger.keys())},
                     step=None,
                 ),
+                html.Div(id='slider-output-container')
             ]),
         ], className='six columns'),
 
@@ -165,6 +166,7 @@ def display_click_data(metadata):
 
 @ app.callback(
     Output('graph-with-slider', 'figure'),
+    Output('slider-output-container', 'children'),
     Input('step-slider', 'value'),
     Input('method-options', 'value'),
     Input('n_components-options', 'value'),
@@ -182,7 +184,7 @@ def update_figure(key, method, n_components, wkey):
     fig = logger.plot_step(str(key))
     print(fig)
 
-    return fig
+    return fig, f'Showing step {key}'
 
 
 @ app.callback(
