@@ -59,7 +59,7 @@ all_emb_roots = list(set([str(Path(path).parent) for path in
 loggers = {}
 for r in all_emb_roots:
     logger = EmbeddingSpaceLogger(r, N_COMPONENTS, DEFAULTMETHOD)
-    loggers[Path(r).name] = logger
+    loggers[str(r)] = logger
 
 logger_key, logger = next(iter(loggers.items()))
 
@@ -133,6 +133,18 @@ app.layout = html.Div([
                         value=2
                     )
                 ], className='six columns'),
+                html.Div([
+                    dcc.Markdown("""
+                    **label key**
+                    """),
+                    dcc.RadioItems(
+                        id='labelkey-options',
+                        options=[
+                            {'label': lk, 'value': lk} for lk in logger.label_keys
+                        ],
+                        value=logger.label_key
+                    )
+                ], className='six columns'),
                 dcc.Markdown("""
                     **embedding space tag**
                     """),
@@ -170,8 +182,10 @@ def display_click_data(metadata):
     Input('step-slider', 'value'),
     Input('method-options', 'value'),
     Input('n_components-options', 'value'),
-    Input('logger-options', 'value'))
-def update_figure(key, method, n_components, wkey):
+    Input('logger-options', 'value'),
+    Input('labelkey-options', 'value'),
+)
+def update_figure(key, method, n_components, wkey, lkey):
     print('updating figure...')
     logger_key = wkey
     logger = loggers[logger_key]
@@ -180,6 +194,7 @@ def update_figure(key, method, n_components, wkey):
 
     logger.set_n_components(n_components)
 
+    logger.label_key = lkey
     key = logger.keys()[key]
     fig = logger.plot_step(str(key))
     print(fig)

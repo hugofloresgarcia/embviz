@@ -40,6 +40,8 @@ class EmbeddingSpaceLogger:
         self.n_components = n_components
         self.method = method
         self.reducer = load_reducer(method, n_components)
+        self.label_key = 'label'
+        self.label_keys = [self.label_key]
 
     def keys(self):
         keys = glob.glob(str(self.root / '*.emb'))
@@ -59,7 +61,7 @@ class EmbeddingSpaceLogger:
         with open(self.root / f'{step_key}.emb', 'rb') as f:
             return pickle.load(f)
 
-    def add_step(self, step_key: str, embeddings: List[np.ndarray], labels: List[str],
+    def add_step(self, step_key: str, embeddings: List[np.ndarray],
                  symbols: List[str] = None, metadata: List[dict] = None,
                  **plotly_kwargs):
         step_key = utils.safe_string(step_key)
@@ -69,7 +71,6 @@ class EmbeddingSpaceLogger:
 
         step = {
             'embedding': embeddings,
-            'labels': labels,
             'symbols': symbols,
             'metadata': metadata,
             'plotly_kwargs': plotly_kwargs,
@@ -88,8 +89,9 @@ class EmbeddingSpaceLogger:
         step = self.get_step(key)
 
         symbols = step['symbols']
-        labels = step['labels']
+        labels = step['metadata'][self.label_key]
         metadata = step['metadata']
+        self.label_keys = list(metadata.keys())
 
         if self.method in step['projs'][f'{self.n_components}d']:
             projection = step['projs'][f'{self.n_components}d'][self.method]
