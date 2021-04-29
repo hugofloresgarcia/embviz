@@ -124,7 +124,11 @@ class EmbeddingSpaceLogger:
                          custom_data=['audio_path', 'label'],
                          color_discrete_sequence=px.colors.qualitative.Light24,
                          **scatter_kwargs,
-                         **step['plotly_kwargs'])
+                         symbol_map={'query-correct': 'star-triangle-up-open',
+                                     'query-incorrect': 'x-open',
+                                     'support': 'hexagram-open',
+                                     'proto': 'circle-open-dot'},
+                         ** step['plotly_kwargs'])
 
         fig.update_traces(marker=dict(size=12,
                                       line=dict(width=2,
