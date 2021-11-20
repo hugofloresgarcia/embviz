@@ -13,7 +13,7 @@ setup(
     author='Hugo Flores Garcia',
     author_email='hf01049@georgiasouthern.edu',
     url='https://github.com/hugofloresgarcia/embviz',
-    install_requires=['plotly', 'pandas', 'sklearn', 'umap-learn'],
+    install_requires=['plotly', 'pandas', 'sklearn', 'umap-learn', 'natsort'],
     packages=['embviz'],
     package_data={'embviz': ['assets/*']},
     long_description=long_description,
