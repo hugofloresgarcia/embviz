@@ -209,7 +209,7 @@ def attempt_load_audio(metadata: dict):
     try:
         print(metadata['points'])
         src = metadata['points'][0]['customdata'][0]
-        src = Path(src).relative_to('/home/hugo/lab/music-trees/data/')
+        src = Path(src).relative_to('./data/')
         src = 'http://0.0.0.0:8000/' + str(src)
         return src
     except:
