@@ -76,7 +76,7 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            dcc.Graph(figure=logger.plot_step(list(logger.keys())[0]),
+            dcc.Graph(figure=logger.plot_step(logger.keys()[0]),
                       id='graph-with-slider',
                       style={'width': '90vh', 'height': '90vh'}),
             html.Div([
